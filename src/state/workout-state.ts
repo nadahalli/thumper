@@ -14,6 +14,73 @@ const COUNTDOWN_SECONDS = 5;
 const SAMPLE_INTERVAL_MS = 5000;
 const SENSITIVITY_KEY = 'thumper_sensitivity';
 
+export interface AudioAdapter {
+  start(): Promise<void>;
+  stop(): void;
+}
+
+export interface BluetoothAdapter {
+  onHeartRate: ((bpm: number) => void) | null;
+  onStateChange: ((state: ConnectionState) => void) | null;
+  scan(): Promise<ScannedDevice>;
+  connect(device: ScannedDevice): Promise<void>;
+  disconnect(): void;
+}
+
+export interface WakeLockAdapter {
+  acquire(): Promise<void>;
+  release(): Promise<void>;
+}
+
+export interface DbAdapter {
+  addWorkout(w: {
+    startTimeMillis: number;
+    durationSeconds: number;
+    avgHeartRate: number | null;
+    jumpCount: number | null;
+    jumpTimeSeconds: number;
+  }): Promise<number>;
+  addSamples(samples: WorkoutSample[]): Promise<void>;
+}
+
+export interface StorageAdapter {
+  getItem(key: string): string | null;
+  setItem(key: string, value: string): void;
+}
+
+export interface WorkoutDeps {
+  audio: AudioAdapter;
+  bluetooth: BluetoothAdapter;
+  wakeLock: WakeLockAdapter;
+  db: DbAdapter;
+  storage: StorageAdapter;
+}
+
+function defaultDeps(): WorkoutDeps {
+  const analyzer = new JumpAnalyzer();
+  let jumpCallback: (() => void) | null = null;
+  const audio = new AudioCapture(analyzer, () => jumpCallback?.());
+  const bluetooth = new BluetoothHR();
+  const wakeLock = new WakeLockManager();
+
+  return {
+    audio: {
+      start: () => audio.start(),
+      stop: () => audio.stop(),
+      // Expose internals for the default case
+      get _analyzer() { return analyzer; },
+      set _jumpCallback(cb: (() => void) | null) { jumpCallback = cb; },
+    } as AudioAdapter & { _analyzer: JumpAnalyzer; _jumpCallback: (() => void) | null },
+    bluetooth,
+    wakeLock,
+    db: {
+      addWorkout: (w) => db.workouts.add(w) as Promise<number>,
+      addSamples: (s) => db.workout_samples.bulkAdd(s) as unknown as Promise<void>,
+    },
+    storage: localStorage,
+  };
+}
+
 export class WorkoutState {
   // Public state
   phase: WorkoutPhase = 'idle';
@@ -27,9 +94,7 @@ export class WorkoutState {
   // Internal
   private listeners = new Set<Listener>();
   private analyzer: JumpAnalyzer;
-  private audio: AudioCapture;
-  private bluetooth = new BluetoothHR();
-  private wakeLock = new WakeLockManager();
+  private deps: WorkoutDeps;
   private timerInterval: ReturnType<typeof setInterval> | null = null;
   private sampleInterval: ReturnType<typeof setInterval> | null = null;
   private countdownInterval: ReturnType<typeof setInterval> | null = null;
@@ -39,19 +104,29 @@ export class WorkoutState {
   private samples: WorkoutSample[] = [];
   private workoutId: number | undefined = undefined;
 
-  constructor() {
-    const saved = localStorage.getItem(SENSITIVITY_KEY);
+  constructor(deps?: WorkoutDeps) {
+    this.deps = deps ?? defaultDeps();
+
+    const saved = this.deps.storage.getItem(SENSITIVITY_KEY);
     const threshold = saved ? parseInt(saved, 10) : 8000;
 
-    this.analyzer = new JumpAnalyzer(threshold);
-    this.audio = new AudioCapture(this.analyzer, () => {
-      if (this.phase === 'active') {
-        this.jumpCount++;
-        this.notify();
-      }
-    });
+    // For default deps, the analyzer lives inside the AudioCapture.
+    // For injected deps, we create a standalone one (tests don't need audio).
+    if (!deps) {
+      const defaultAudio = this.deps.audio as AudioAdapter & { _analyzer: JumpAnalyzer; _jumpCallback: (() => void) | null };
+      this.analyzer = defaultAudio._analyzer;
+      this.analyzer.threshold = threshold;
+      defaultAudio._jumpCallback = () => {
+        if (this.phase === 'active') {
+          this.jumpCount++;
+          this.notify();
+        }
+      };
+    } else {
+      this.analyzer = new JumpAnalyzer(threshold);
+    }
 
-    this.bluetooth.onHeartRate = (bpm) => {
+    this.deps.bluetooth.onHeartRate = (bpm) => {
       this.heartRate = bpm;
       if (this.phase === 'active') {
         this.hrReadings.push(bpm);
@@ -59,7 +134,7 @@ export class WorkoutState {
       this.notify();
     };
 
-    this.bluetooth.onStateChange = (state) => {
+    this.deps.bluetooth.onStateChange = (state) => {
       this.connectionState = state;
       this.notify();
     };
@@ -71,7 +146,7 @@ export class WorkoutState {
 
   setSensitivity(value: number): void {
     this.analyzer.threshold = value;
-    localStorage.setItem(SENSITIVITY_KEY, String(value));
+    this.deps.storage.setItem(SENSITIVITY_KEY, String(value));
     this.notify();
   }
 
@@ -86,12 +161,12 @@ export class WorkoutState {
 
   // BLE
   async scanAndConnect(): Promise<void> {
-    const scanned: ScannedDevice = await this.bluetooth.scan();
-    await this.bluetooth.connect(scanned);
+    const scanned: ScannedDevice = await this.deps.bluetooth.scan();
+    await this.deps.bluetooth.connect(scanned);
   }
 
   disconnectBle(): void {
-    this.bluetooth.disconnect();
+    this.deps.bluetooth.disconnect();
   }
 
   // Workout lifecycle
@@ -106,7 +181,7 @@ export class WorkoutState {
     this.analyzer.reset();
     this.notify();
 
-    await this.audio.start();
+    await this.deps.audio.start();
 
     this.countdownInterval = setInterval(() => {
       this.countdown--;
@@ -123,7 +198,7 @@ export class WorkoutState {
     this.phase = 'active';
     this.startTimeMs = Date.now();
     this.pausedElapsed = 0;
-    await this.wakeLock.acquire();
+    await this.deps.wakeLock.acquire();
 
     this.timerInterval = setInterval(() => {
       this.elapsedSeconds = Math.floor((Date.now() - this.startTimeMs) / 1000);
@@ -165,8 +240,8 @@ export class WorkoutState {
   async stop(): Promise<void> {
     this.phase = 'stopped';
     this.clearTimers();
-    this.audio.stop();
-    await this.wakeLock.release();
+    this.deps.audio.stop();
+    await this.deps.wakeLock.release();
 
     // Collect final sample
     this.collectSample();
@@ -185,7 +260,7 @@ export class WorkoutState {
   async saveWorkout(): Promise<void> {
     if (!this.summary) return;
 
-    this.workoutId = await db.workouts.add({
+    this.workoutId = await this.deps.db.addWorkout({
       startTimeMillis: this.startTimeMs,
       durationSeconds: this.elapsedSeconds,
       avgHeartRate: this.summary.avgHeartRate,
@@ -197,7 +272,7 @@ export class WorkoutState {
       ...s,
       workoutId: this.workoutId!,
     }));
-    await db.workout_samples.bulkAdd(samplesWithWorkoutId);
+    await this.deps.db.addSamples(samplesWithWorkoutId);
 
     this.summary = null;
     this.phase = 'idle';
