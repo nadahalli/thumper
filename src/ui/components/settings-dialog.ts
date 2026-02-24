@@ -12,7 +12,7 @@ export function createSettingsDialog(state: WorkoutState): HTMLElement {
         <input type="range" id="sensitivity-slider" min="1000" max="20000" step="500">
         <div class="setting-value" id="sensitivity-value"></div>
       </div>
-      <button class="btn btn-secondary" id="btn-close-settings">Close</button>
+      <button class="btn btn-secondary btn-centered" id="btn-close-settings">Close</button>
     </div>
   `;
 
