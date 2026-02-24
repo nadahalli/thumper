@@ -96,11 +96,28 @@ export function createHistoryScreen(container: HTMLElement): void {
     }
 
     for (const btn of container.querySelectorAll<HTMLButtonElement>('.btn-delete')) {
-      btn.addEventListener('click', async () => {
-        const id = Number(btn.dataset.id);
-        await db.workout_samples.where('workoutId').equals(id).delete();
-        await db.workouts.delete(id);
-        await render();
+      btn.addEventListener('click', () => {
+        const item = btn.closest<HTMLElement>('.history-item')!;
+        const existing = item.querySelector('.confirm-delete');
+        if (existing) {
+          existing.remove();
+          return;
+        }
+        const bar = document.createElement('div');
+        bar.className = 'confirm-delete';
+        bar.innerHTML = `
+          <span>Delete this workout?</span>
+          <button class="btn-icon btn-confirm-yes">Yes</button>
+          <button class="btn-icon btn-confirm-no">No</button>
+        `;
+        bar.querySelector('.btn-confirm-yes')!.addEventListener('click', async () => {
+          const id = Number(btn.dataset.id);
+          await db.workout_samples.where('workoutId').equals(id).delete();
+          await db.workouts.delete(id);
+          await render();
+        });
+        bar.querySelector('.btn-confirm-no')!.addEventListener('click', () => bar.remove());
+        item.appendChild(bar);
       });
     }
   }

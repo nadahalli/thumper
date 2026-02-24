@@ -151,6 +151,7 @@ nav a.active {
   border-radius: 12px;
   padding: 16px;
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
 }
@@ -195,6 +196,27 @@ nav a.active {
 .btn-delete {
   font-size: 18px;
   padding: 6px 10px;
+}
+
+.confirm-delete {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--surface2);
+  font-size: 14px;
+  color: var(--red);
+}
+
+.confirm-delete span {
+  flex: 1;
+}
+
+.btn-confirm-yes {
+  background: var(--red) !important;
+  color: #fff !important;
 }
 
 .history-empty {
