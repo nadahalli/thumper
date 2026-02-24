@@ -1,6 +1,6 @@
 # Thumper
 
-**Try it now: [nadahalli.github.io/thumper-pwa](https://nadahalli.github.io/thumper-pwa/)** (Android + Chrome, add to homescreen for full PWA experience)
+**Try it now: [nadahalli.github.io/thumper](https://nadahalli.github.io/thumper/)** (Android + Chrome, add to homescreen for full PWA experience)
 
 A minimal jump rope workout app with BLE heart rate monitoring and mic-based jump counting.
 

@@ -2,7 +2,7 @@ import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
-  base: '/thumper-pwa/',
+  base: '/thumper/',
   plugins: [
     VitePWA({
       registerType: 'autoUpdate',
