@@ -23,7 +23,7 @@ A minimal jump rope workout app with BLE heart rate monitoring and mic-based jum
 - Android + Chrome (Web Bluetooth, Web Audio, Wake Lock)
 - BLE-capable device (for heart rate)
 - Microphone permission (for jump detection)
-- Does not work on iOS because Apple thinks Web Bluetooth is too much freedom for their users
+- Does not work on iOS because Safari doesn't support Web Bluetooth. Thanks, Apple.
 
 ## Development
 
