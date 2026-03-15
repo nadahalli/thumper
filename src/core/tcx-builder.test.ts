@@ -27,7 +27,7 @@ function sample(overrides: Partial<WorkoutSample> = {}): WorkoutSample {
   };
 }
 
-describe('buildTcx', () => {
+describe('buildTcx (legacy single-lap)', () => {
   it('single workout produces valid TCX structure', () => {
     const tcx = buildTcx([workout()], new Map([[1, [sample()]]]));
     expect(tcx).toContain('<?xml version="1.0" encoding="UTF-8"?>');
@@ -93,5 +93,90 @@ describe('buildTcx', () => {
       new Map(),
     );
     expect(tcx).not.toContain('<Notes>');
+  });
+});
+
+describe('buildTcx (multi-lap with sets)', () => {
+  const set1Start = BASE_TS;
+  const set1End = BASE_TS + 120_000;
+  const set2Start = BASE_TS + 180_000;
+  const set2End = BASE_TS + 300_000;
+
+  const setsWorkout = workout({
+    sets: [
+      { startMs: set1Start, endMs: set1End, jumps: 50 },
+      { startMs: set2Start, endMs: set2End, jumps: 80 },
+    ],
+  });
+
+  const samples: WorkoutSample[] = [
+    sample({ timestampMillis: BASE_TS + 5_000, heartRate: 120 }),
+    sample({ timestampMillis: BASE_TS + 60_000, heartRate: 140 }),
+    sample({ timestampMillis: BASE_TS + 115_000, heartRate: 150 }),
+    // Gap between sets
+    sample({ timestampMillis: BASE_TS + 150_000, heartRate: 110 }), // rest, outside both sets
+    // Set 2
+    sample({ timestampMillis: BASE_TS + 200_000, heartRate: 155 }),
+    sample({ timestampMillis: BASE_TS + 280_000, heartRate: 170 }),
+  ];
+
+  it('produces one Lap per set', () => {
+    const tcx = buildTcx([setsWorkout], new Map([[1, samples]]));
+    const laps = tcx.match(/<Lap /g);
+    expect(laps).toHaveLength(2);
+  });
+
+  it('each Lap has correct start time', () => {
+    const tcx = buildTcx([setsWorkout], new Map([[1, samples]]));
+    expect(tcx).toContain(`<Lap StartTime="${new Date(set1Start).toISOString()}">`);
+    expect(tcx).toContain(`<Lap StartTime="${new Date(set2Start).toISOString()}">`);
+  });
+
+  it('each Lap has correct duration', () => {
+    const tcx = buildTcx([setsWorkout], new Map([[1, samples]]));
+    expect(tcx).toContain('<TotalTimeSeconds>120</TotalTimeSeconds>'); // set1: 120s
+    expect(tcx).toContain('<TotalTimeSeconds>120</TotalTimeSeconds>'); // set2: 120s
+  });
+
+  it('Lap Notes contain jump count', () => {
+    const tcx = buildTcx([setsWorkout], new Map([[1, samples]]));
+    expect(tcx).toContain('<Notes>50 jumps</Notes>');
+    expect(tcx).toContain('<Notes>80 jumps</Notes>');
+  });
+
+  it('HR samples are filtered to their respective Laps', () => {
+    const tcx = buildTcx([setsWorkout], new Map([[1, samples]]));
+    // Rest sample (ts=BASE+150s, HR=110) should not appear in any lap trackpoints
+    // Set1 has HR 120, 140, 150; Set2 has HR 155, 170
+    expect(tcx).toContain('<Value>120</Value>');
+    expect(tcx).toContain('<Value>155</Value>');
+    // The rest HR should still not be in any Lap since it's between sets
+    // Count occurrences of 110 in HeartRateBpm context
+    const hrMatches = tcx.match(/<Value>110<\/Value>/g);
+    expect(hrMatches).toBeNull();
+  });
+
+  it('Laps include AverageHeartRateBpm and MaximumHeartRateBpm', () => {
+    const tcx = buildTcx([setsWorkout], new Map([[1, samples]]));
+    expect(tcx).toContain('<AverageHeartRateBpm>');
+    expect(tcx).toContain('<MaximumHeartRateBpm>');
+    // Set1 avg: round((120+140+150)/3) = 137, max: 150
+    expect(tcx).toContain('<AverageHeartRateBpm><Value>137</Value></AverageHeartRateBpm>');
+    expect(tcx).toContain('<MaximumHeartRateBpm><Value>150</Value></MaximumHeartRateBpm>');
+    // Set2 avg: round((155+170)/2) = 163, max: 170
+    expect(tcx).toContain('<AverageHeartRateBpm><Value>163</Value></AverageHeartRateBpm>');
+    expect(tcx).toContain('<MaximumHeartRateBpm><Value>170</Value></MaximumHeartRateBpm>');
+  });
+
+  it('Laps include Intensity element', () => {
+    const tcx = buildTcx([setsWorkout], new Map([[1, samples]]));
+    expect(tcx).toContain('<Intensity>Active</Intensity>');
+  });
+
+  it('falls back to single lap when sets is empty', () => {
+    const tcx = buildTcx([workout({ sets: [] })], new Map());
+    const laps = tcx.match(/<Lap /g);
+    expect(laps).toHaveLength(1);
+    expect(tcx).not.toContain('<Intensity>');
   });
 });

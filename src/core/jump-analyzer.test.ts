@@ -235,4 +235,27 @@ describe('JumpAnalyzer (streak gating)', () => {
     analyzer.reset();
     expect(analyzer.topStreaks(3)).toHaveLength(0);
   });
+
+  it('allStreaks returns chronological order with startMs', () => {
+    // Streak 1
+    for (let i = 0; i < STREAK; i++) {
+      analyzer.processBuffer(bufferWithAmplitude(6000), 64, 1000 + i * 500);
+    }
+    const streak1End = 1000 + (STREAK - 1) * 500;
+
+    // Gap to close streak 1
+    const streak2Base = streak1End + 3000;
+
+    // Streak 2 (in progress)
+    for (let i = 0; i < STREAK; i++) {
+      analyzer.processBuffer(bufferWithAmplitude(6000), 64, streak2Base + i * 500);
+    }
+
+    const all = analyzer.allStreaks();
+    expect(all).toHaveLength(2);
+    expect(all[0].startMs).toBe(1000);
+    expect(all[1].startMs).toBe(streak2Base);
+    // Chronological: first streak before second
+    expect(all[0].startMs).toBeLessThan(all[1].startMs);
+  });
 });

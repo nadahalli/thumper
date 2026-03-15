@@ -1,3 +1,9 @@
+export interface WorkoutSet {
+  startMs: number;
+  endMs: number;
+  jumps: number;
+}
+
 export interface Workout {
   id?: number;
   startTimeMillis: number;
@@ -5,6 +11,7 @@ export interface Workout {
   avgHeartRate: number | null;
   jumpCount: number | null;
   jumpTimeSeconds: number | null;
+  sets?: WorkoutSet[];
 }
 
 export interface WorkoutSample {

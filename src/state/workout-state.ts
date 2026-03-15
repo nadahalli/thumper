@@ -1,5 +1,5 @@
 import { JumpAnalyzer } from '../core/jump-analyzer';
-import { computeSummary, type WorkoutSummary } from '../core/summary';
+import { computeSummary, groupSets, type WorkoutSummary } from '../core/summary';
 import { AudioCapture } from '../api/audio';
 import { BluetoothHR } from '../api/bluetooth';
 import { WakeLockManager } from '../api/wake-lock';
@@ -39,6 +39,7 @@ export interface DbAdapter {
     avgHeartRate: number | null;
     jumpCount: number | null;
     jumpTimeSeconds: number;
+    sets?: import('../data/types').WorkoutSet[];
   }): Promise<number>;
   addSamples(samples: WorkoutSample[]): Promise<void>;
 }
@@ -247,12 +248,14 @@ export class WorkoutState {
     this.collectSample();
 
     // Compute summary (don't persist yet, wait for save/discard)
+    const allStreaks = this.analyzer.allStreaks();
     this.summary = computeSummary(
       this.elapsedSeconds,
       this.hrReadings,
       this.jumpCount,
       this.analyzer.jumpTimeMs,
       this.analyzer.topStreaks(3),
+      groupSets(allStreaks),
     );
 
     this.notify();
@@ -267,6 +270,7 @@ export class WorkoutState {
       avgHeartRate: this.summary.avgHeartRate,
       jumpCount: this.summary.jumpCount,
       jumpTimeSeconds: this.summary.jumpTimeSeconds,
+      sets: this.summary.sets,
     });
 
     const samplesWithWorkoutId = this.samples.map((s) => ({

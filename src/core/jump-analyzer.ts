@@ -1,4 +1,5 @@
 export interface Streak {
+  startMs: number;
   jumps: number;
   durationMs: number;
 }
@@ -56,6 +57,7 @@ export class JumpAnalyzer {
     // Close gate if gap since last jump is too large
     if (this.gateOpen && gap > this.maxGapMs) {
       this.completedStreaks.push({
+        startMs: this.curStreakStartMs,
         jumps: this.curStreakJumps,
         durationMs: this.curStreakLastMs - this.curStreakStartMs,
       });
@@ -105,14 +107,22 @@ export class JumpAnalyzer {
     return 0;
   }
 
-  /** Returns the top N streaks by jump count, including any in-progress streak. */
-  topStreaks(n: number): Streak[] {
+  /** Returns all streaks in chronological order, including any in-progress streak. */
+  allStreaks(): Streak[] {
     const all = [...this.completedStreaks];
     if (this.gateOpen && this.curStreakJumps > 0) {
-      all.push({ jumps: this.curStreakJumps, durationMs: this.curStreakLastMs - this.curStreakStartMs });
+      all.push({
+        startMs: this.curStreakStartMs,
+        jumps: this.curStreakJumps,
+        durationMs: this.curStreakLastMs - this.curStreakStartMs,
+      });
     }
-    all.sort((a, b) => b.jumps - a.jumps);
-    return all.slice(0, n);
+    return all;
+  }
+
+  /** Returns the top N streaks by jump count. */
+  topStreaks(n: number): Streak[] {
+    return [...this.allStreaks()].sort((a, b) => b.jumps - a.jumps).slice(0, n);
   }
 
   reset(): void {
