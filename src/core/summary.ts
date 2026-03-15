@@ -1,9 +1,12 @@
+import type { Streak } from './jump-analyzer';
+
 export interface WorkoutSummary {
   durationSeconds: number;
   jumpTimeSeconds: number;
   avgHeartRate: number | null;
   jumpCount: number | null;
   jumpsPerMinute: number | null;
+  topStreaks: Streak[];
 }
 
 export function computeSummary(
@@ -11,6 +14,7 @@ export function computeSummary(
   hrReadings: number[],
   jumpCount: number,
   jumpTimeMs: number,
+  topStreaks: Streak[] = [],
 ): WorkoutSummary {
   const avgHeartRate =
     hrReadings.length > 0
@@ -30,5 +34,6 @@ export function computeSummary(
     avgHeartRate,
     jumpCount: jumpCount > 0 ? jumpCount : null,
     jumpsPerMinute: jpm,
+    topStreaks,
   };
 }

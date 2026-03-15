@@ -252,6 +252,7 @@ export class WorkoutState {
       this.hrReadings,
       this.jumpCount,
       this.analyzer.jumpTimeMs,
+      this.analyzer.topStreaks(3),
     );
 
     this.notify();

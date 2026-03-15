@@ -1,3 +1,8 @@
+export interface Streak {
+  jumps: number;
+  durationMs: number;
+}
+
 export class JumpAnalyzer {
   threshold: number;
   private cooldownMs: number;
@@ -10,6 +15,12 @@ export class JumpAnalyzer {
   // Streak gating: buffer detected jumps until a streak confirms real jumping
   private pendingJumps: number[] = [];
   private gateOpen = false;
+
+  // Streak tracking
+  private completedStreaks: Streak[] = [];
+  private curStreakJumps = 0;
+  private curStreakStartMs = 0;
+  private curStreakLastMs = 0;
 
   constructor(
     threshold = 8000,
@@ -44,6 +55,10 @@ export class JumpAnalyzer {
 
     // Close gate if gap since last jump is too large
     if (this.gateOpen && gap > this.maxGapMs) {
+      this.completedStreaks.push({
+        jumps: this.curStreakJumps,
+        durationMs: this.curStreakLastMs - this.curStreakStartMs,
+      });
       this.gateOpen = false;
     }
 
@@ -53,6 +68,8 @@ export class JumpAnalyzer {
       if (gap > 0 && gap <= this.maxGapMs) {
         this.jumpTimeMs += gap;
       }
+      this.curStreakJumps++;
+      this.curStreakLastMs = nowMs;
       return 1;
     }
 
@@ -76,6 +93,11 @@ export class JumpAnalyzer {
         }
       }
 
+      // Start tracking this streak
+      this.curStreakJumps = count;
+      this.curStreakStartMs = this.pendingJumps[0];
+      this.curStreakLastMs = this.pendingJumps[count - 1];
+
       this.pendingJumps = [];
       return count;
     }
@@ -83,10 +105,24 @@ export class JumpAnalyzer {
     return 0;
   }
 
+  /** Returns the top N streaks by jump count, including any in-progress streak. */
+  topStreaks(n: number): Streak[] {
+    const all = [...this.completedStreaks];
+    if (this.gateOpen && this.curStreakJumps > 0) {
+      all.push({ jumps: this.curStreakJumps, durationMs: this.curStreakLastMs - this.curStreakStartMs });
+    }
+    all.sort((a, b) => b.jumps - a.jumps);
+    return all.slice(0, n);
+  }
+
   reset(): void {
     this.lastJumpTimeMs = 0;
     this.jumpTimeMs = 0;
     this.pendingJumps = [];
     this.gateOpen = false;
+    this.completedStreaks = [];
+    this.curStreakJumps = 0;
+    this.curStreakStartMs = 0;
+    this.curStreakLastMs = 0;
   }
 }

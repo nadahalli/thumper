@@ -59,6 +59,13 @@ export function createSummaryDialog(state: WorkoutState): HTMLElement {
       if (s.jumpCount != null) html += row('Jumps', String(s.jumpCount));
       if (s.jumpsPerMinute != null) html += row('Jumps/min', s.jumpsPerMinute.toFixed(1));
       if (s.avgHeartRate != null) html += row('Avg HR', `${s.avgHeartRate} bpm`);
+      if (s.topStreaks.length > 0) {
+        html += `<div class="streaks-section"><div class="streaks-label">Longest Streaks</div>`;
+        for (const streak of s.topStreaks) {
+          html += row(`${streak.jumps} jumps`, formatTime(Math.round(streak.durationMs / 1000)));
+        }
+        html += `</div>`;
+      }
       rows.innerHTML = html;
       // Reset to main buttons view
       mainButtons.style.display = '';

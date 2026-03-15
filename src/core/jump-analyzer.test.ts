@@ -171,4 +171,68 @@ describe('JumpAnalyzer (streak gating)', () => {
     }
     expect(analyzer.processBuffer(bufferWithAmplitude(6000), 64, 5000 + (STREAK - 1) * 500)).toBe(STREAK);
   });
+
+  it('topStreaks includes in-progress streak', () => {
+    // Confirm a streak of 5
+    for (let i = 0; i < STREAK; i++) {
+      analyzer.processBuffer(bufferWithAmplitude(6000), 64, 1000 + i * 500);
+    }
+    // Add 3 more jumps (still in same streak)
+    for (let i = 0; i < 3; i++) {
+      analyzer.processBuffer(bufferWithAmplitude(6000), 64, 1000 + (STREAK + i) * 500);
+    }
+
+    const streaks = analyzer.topStreaks(3);
+    expect(streaks).toHaveLength(1);
+    expect(streaks[0].jumps).toBe(STREAK + 3);
+    expect(streaks[0].durationMs).toBe((STREAK + 2) * 500); // first to last
+  });
+
+  it('topStreaks returns completed streaks sorted by jumps', () => {
+    // Streak 1: 5 jumps
+    for (let i = 0; i < STREAK; i++) {
+      analyzer.processBuffer(bufferWithAmplitude(6000), 64, 1000 + i * 500);
+    }
+    const streak1End = 1000 + (STREAK - 1) * 500;
+
+    // Gap to close streak 1
+    const streak2Start = streak1End + 3000;
+
+    // Streak 2: 5 + 5 more = 10 jumps
+    for (let i = 0; i < STREAK; i++) {
+      analyzer.processBuffer(bufferWithAmplitude(6000), 64, streak2Start + i * 500);
+    }
+    for (let i = 0; i < STREAK; i++) {
+      analyzer.processBuffer(bufferWithAmplitude(6000), 64, streak2Start + (STREAK + i) * 500);
+    }
+
+    const streaks = analyzer.topStreaks(3);
+    expect(streaks).toHaveLength(2);
+    expect(streaks[0].jumps).toBe(STREAK * 2); // longer streak first
+    expect(streaks[1].jumps).toBe(STREAK);
+  });
+
+  it('topStreaks limited to requested count', () => {
+    let t = 1000;
+    // Create 4 streaks with gaps between them
+    for (let s = 0; s < 4; s++) {
+      for (let i = 0; i < STREAK; i++) {
+        analyzer.processBuffer(bufferWithAmplitude(6000), 64, t);
+        t += 500;
+      }
+      t += 3000; // gap to close streak
+    }
+
+    expect(analyzer.topStreaks(2)).toHaveLength(2);
+  });
+
+  it('reset clears streak tracking', () => {
+    for (let i = 0; i < STREAK; i++) {
+      analyzer.processBuffer(bufferWithAmplitude(6000), 64, 1000 + i * 500);
+    }
+    expect(analyzer.topStreaks(3)).toHaveLength(1);
+
+    analyzer.reset();
+    expect(analyzer.topStreaks(3)).toHaveLength(0);
+  });
 });

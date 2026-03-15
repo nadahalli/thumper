@@ -268,6 +268,20 @@ nav a.active {
 .dialog-row .label { color: var(--text-dim); }
 .dialog-row .value { font-weight: 600; }
 
+.streaks-section {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--surface2);
+}
+
+.streaks-label {
+  font-size: 13px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+
 .dialog .btn {
   margin-top: 16px;
 }
