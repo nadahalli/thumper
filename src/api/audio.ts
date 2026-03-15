@@ -6,9 +6,9 @@ export class AudioCapture {
   private processor: ScriptProcessorNode | null = null;
   private source: MediaStreamAudioSourceNode | null = null;
   private analyzer: JumpAnalyzer;
-  private onJump: () => void;
+  private onJump: (count: number) => void;
 
-  constructor(analyzer: JumpAnalyzer, onJump: () => void) {
+  constructor(analyzer: JumpAnalyzer, onJump: (count: number) => void) {
     this.analyzer = analyzer;
     this.onJump = onJump;
   }
@@ -28,8 +28,9 @@ export class AudioCapture {
       for (let i = 0; i < input.length; i++) {
         buf[i] = Math.round(input[i] * 32767);
       }
-      if (this.analyzer.processBuffer(buf, buf.length, Date.now())) {
-        this.onJump();
+      const count = this.analyzer.processBuffer(buf, buf.length, Date.now());
+      if (count > 0) {
+        this.onJump(count);
       }
     };
 

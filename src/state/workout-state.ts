@@ -58,8 +58,8 @@ export interface WorkoutDeps {
 
 function defaultDeps(): WorkoutDeps {
   const analyzer = new JumpAnalyzer();
-  let jumpCallback: (() => void) | null = null;
-  const audio = new AudioCapture(analyzer, () => jumpCallback?.());
+  let jumpCallback: ((count: number) => void) | null = null;
+  const audio = new AudioCapture(analyzer, (count) => jumpCallback?.(count));
   const bluetooth = new BluetoothHR();
   const wakeLock = new WakeLockManager();
 
@@ -70,7 +70,7 @@ function defaultDeps(): WorkoutDeps {
       // Expose internals for the default case
       get _analyzer() { return analyzer; },
       set _jumpCallback(cb: (() => void) | null) { jumpCallback = cb; },
-    } as AudioAdapter & { _analyzer: JumpAnalyzer; _jumpCallback: (() => void) | null },
+    } as AudioAdapter & { _analyzer: JumpAnalyzer; _jumpCallback: ((count: number) => void) | null },
     bluetooth,
     wakeLock,
     db: {
@@ -113,12 +113,12 @@ export class WorkoutState {
     // For default deps, the analyzer lives inside the AudioCapture.
     // For injected deps, we create a standalone one (tests don't need audio).
     if (!deps) {
-      const defaultAudio = this.deps.audio as AudioAdapter & { _analyzer: JumpAnalyzer; _jumpCallback: (() => void) | null };
+      const defaultAudio = this.deps.audio as AudioAdapter & { _analyzer: JumpAnalyzer; _jumpCallback: ((count: number) => void) | null };
       this.analyzer = defaultAudio._analyzer;
       this.analyzer.threshold = threshold;
-      defaultAudio._jumpCallback = () => {
+      defaultAudio._jumpCallback = (count: number) => {
         if (this.phase === 'active') {
-          this.jumpCount++;
+          this.jumpCount += count;
           this.notify();
         }
       };
