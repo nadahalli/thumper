@@ -5,26 +5,28 @@
       <button class="btn-icon" id="btn-ble">HR Strap</button>
       <button class="btn-icon" id="btn-settings">Settings</button>
     </div>
-    <div class="workout-stats">
-      <div class="stat" id="countdown-stat" style="display:none">
-        <div class="stat-value countdown" id="countdown-value"></div>
+    <div class="workout-layout">
+      <div class="workout-stats">
+        <div class="stat" id="countdown-stat" style="display:none">
+          <div class="stat-value countdown" id="countdown-value"></div>
+        </div>
+        <div class="stat" id="bpm-stat">
+          <div class="stat-value bpm" id="bpm-value">--</div>
+          <div class="stat-label">BPM</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value jumps" id="jump-value">0</div>
+          <div class="stat-label">Jumps</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value timer" id="timer-value">0:00</div>
+          <div class="stat-label">Time</div>
+        </div>
       </div>
-      <div class="stat" id="bpm-stat">
-        <div class="stat-value bpm" id="bpm-value">--</div>
-        <div class="stat-label">BPM</div>
+      <div class="ble-status" id="ble-status"></div>
+      <div class="controls" id="workout-controls">
+        <button class="btn btn-start" id="btn-start">Start</button>
       </div>
-      <div class="stat">
-        <div class="stat-value jumps" id="jump-value">0</div>
-        <div class="stat-label">Jumps</div>
-      </div>
-      <div class="stat">
-        <div class="stat-value timer" id="timer-value">0:00</div>
-        <div class="stat-label">Time</div>
-      </div>
-    </div>
-    <div class="ble-status" id="ble-status"></div>
-    <div class="controls" id="workout-controls">
-      <button class="btn btn-start" id="btn-start">Start</button>
     </div>
   `;const w=k.querySelector("#btn-ble"),j=k.querySelector("#btn-settings"),S=k.querySelector("#bpm-value"),q=k.querySelector("#jump-value"),R=k.querySelector("#timer-value"),H=k.querySelector("#ble-status"),Z=k.querySelector("#workout-controls"),Ne=k.querySelector("#countdown-stat"),ne=k.querySelector("#countdown-value"),de=k.querySelector("#bpm-stat");w.addEventListener("click",async()=>{if(g.connectionState==="connected")g.disconnectBle();else try{await g.scanAndConnect()}catch{}}),j.addEventListener("click",O);function tt(){S.textContent=g.heartRate!=null?String(g.heartRate):"--";const nt={disconnected:"",scanning:"Scanning...",connecting:"Connecting...",connected:"HR Strap Connected"};switch(H.textContent=nt[g.connectionState],H.className="ble-status"+(g.connectionState==="connected"?" connected":""),g.phase==="countdown"?(Ne.style.display="",ne.textContent=String(g.countdown),de.style.display="none"):(Ne.style.display="none",de.style.display=""),q.textContent=String(g.jumpCount),R.textContent=Di(g.elapsedSeconds),g.phase){case"idle":case"stopped":Z.innerHTML='<button class="btn btn-start" id="btn-start">Start</button>';break;case"countdown":Z.innerHTML='<button class="btn btn-stop" id="btn-stop">Cancel</button>';break;case"active":Z.innerHTML=`
           <button class="btn btn-pause" id="btn-pause">Pause</button>
