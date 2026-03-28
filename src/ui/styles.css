@@ -351,8 +351,8 @@ nav a.active {
   padding: 8px 0;
 }
 
-/* Cover display / compact mode */
-@media (max-width: 340px) {
+/* Cover display / compact mode (Razr cover display ~360-400px CSS width) */
+@media (max-height: 500px) and (max-width: 420px) {
   .screen {
     padding: 8px;
   }
@@ -370,12 +370,14 @@ nav a.active {
     display: flex;
     flex-direction: row;
     flex: 1;
-    gap: 8px;
+    gap: 12px;
+    align-items: center;
   }
 
   .workout-stats {
     flex: 1;
     align-items: flex-start;
+    gap: 4px;
   }
 
   .stat {
@@ -386,21 +388,28 @@ nav a.active {
   .controls {
     flex-direction: column;
     justify-content: center;
-    width: 100px;
+    gap: 8px;
+    width: 110px;
     padding: 0;
+    flex-shrink: 0;
   }
 
   .btn {
-    padding: 14px 8px;
+    padding: 16px 8px;
     font-size: 14px;
   }
 
   .stat-label {
     font-size: 14px;
+    margin-top: 2px;
   }
 
   nav a {
     padding: 8px;
     font-size: 12px;
+  }
+
+  .ble-status {
+    padding: 4px;
   }
 }
