@@ -370,19 +370,20 @@ nav a.active {
     display: flex;
     flex-direction: row;
     flex: 1;
-    gap: 12px;
+    gap: 16px;
     align-items: center;
+    justify-content: center;
   }
 
   .workout-stats {
-    flex: 1;
-    align-items: flex-start;
+    flex: none;
+    align-items: center;
     gap: 4px;
   }
 
   .stat {
-    align-items: flex-start;
-    text-align: left;
+    align-items: center;
+    text-align: center;
   }
 
   .controls {
