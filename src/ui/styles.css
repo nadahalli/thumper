@@ -365,10 +365,6 @@ nav a.active {
     overflow: hidden;
   }
 
-  nav {
-    display: none;
-  }
-
   .toolbar {
     padding: 2px 0;
   }
@@ -430,5 +426,10 @@ nav a.active {
   .ble-status {
     padding: 2px;
     font-size: 10px;
+  }
+
+  .workout-active nav,
+  .workout-active .toolbar {
+    display: none;
   }
 }

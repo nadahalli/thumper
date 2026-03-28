@@ -66,7 +66,13 @@ export function createWorkoutScreen(
 
   btnSettings.addEventListener('click', openSettings);
 
+  const appEl = document.getElementById('app')!;
+
   function render(): void {
+    // Toggle compact hiding of nav/toolbar during active workout
+    const isActive = state.phase === 'countdown' || state.phase === 'active' || state.phase === 'paused';
+    appEl.classList.toggle('workout-active', isActive);
+
     // BPM
     bpmValue.textContent = state.heartRate != null ? String(state.heartRate) : '--';
 
@@ -122,6 +128,9 @@ export function createWorkoutScreen(
     controls.querySelector('#btn-pause')?.addEventListener('click', () => state.pause());
     controls.querySelector('#btn-resume')?.addEventListener('click', () => state.resume());
     controls.querySelector('#btn-stop')?.addEventListener('click', () => state.stop());
+
+    // Recalculate font size when nav/toolbar visibility changes
+    requestAnimationFrame(sizeStats);
   }
 
   const statValues = container.querySelectorAll<HTMLElement>('.stat-value');
