@@ -128,9 +128,12 @@ export function createWorkoutScreen(
 
   function sizeStats(): void {
     // Use window height directly, not container height (avoids feedback loop)
-    const available = window.innerHeight - 120; // nav + toolbar + controls + padding
+    const isCompact = window.innerHeight <= 420;
+    const overhead = isCompact ? 40 : 120; // compact: just toolbar; normal: nav + toolbar + controls + padding
+    const available = window.innerHeight - overhead;
     const perStat = Math.floor(available / 3);
-    const fontSize = Math.max(32, Math.min(perStat - 30, 160));
+    const maxSize = isCompact ? 240 : 160;
+    const fontSize = Math.max(32, Math.min(perStat - 10, maxSize));
     for (const el of statValues) {
       el.style.fontSize = `${fontSize}px`;
     }

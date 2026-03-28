@@ -360,8 +360,13 @@ nav a.active {
   }
 
   #app {
+    height: 100dvh;
     max-height: 100dvh;
     overflow: hidden;
+  }
+
+  nav {
+    display: none;
   }
 
   .toolbar {
