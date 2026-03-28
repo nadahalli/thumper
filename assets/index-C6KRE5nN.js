@@ -5,6 +5,7 @@
       <button class="btn-icon" id="btn-ble">HR Strap</button>
       <button class="btn-icon" id="btn-settings">Settings</button>
     </div>
+    <div class="ble-status" id="ble-status"></div>
     <div class="workout-layout">
       <div class="workout-stats">
         <div class="stat" id="countdown-stat" style="display:none">
@@ -23,7 +24,6 @@
           <div class="stat-label">Time</div>
         </div>
       </div>
-      <div class="ble-status" id="ble-status"></div>
       <div class="controls" id="workout-controls">
         <button class="btn btn-start" id="btn-start">Start</button>
       </div>
