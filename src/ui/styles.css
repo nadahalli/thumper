@@ -354,16 +354,23 @@ nav a.active {
 /* Cover display / compact mode (Razr cover display: 480x354-410) */
 @media (max-height: 420px) {
   .screen {
-    padding: 8px;
+    padding: 4px 8px;
+    overflow: hidden;
+    max-height: 100dvh;
+  }
+
+  #app {
+    max-height: 100dvh;
+    overflow: hidden;
   }
 
   .toolbar {
-    padding: 4px 0;
+    padding: 2px 0;
   }
 
   .btn-icon {
     font-size: 11px;
-    padding: 6px 8px;
+    padding: 4px 8px;
   }
 
   .workout-layout {
@@ -391,19 +398,24 @@ nav a.active {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    gap: 16px;
+    gap: 12px;
     padding: 0;
   }
 
   .btn {
-    padding: 16px 12px;
-    font-size: 14px;
-    width: 100%;
+    padding: 12px 8px;
+    font-size: 13px;
+    width: 90%;
+    flex: none;
   }
 
   .stat-label {
-    font-size: 12px;
-    margin-top: 2px;
+    font-size: 11px;
+    margin-top: 0;
+  }
+
+  .stat-value {
+    line-height: 0.9;
   }
 
   nav a {
