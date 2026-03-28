@@ -370,38 +370,39 @@ nav a.active {
     display: flex;
     flex-direction: row;
     flex: 1;
-    gap: 16px;
-    align-items: center;
-    justify-content: center;
   }
 
   .workout-stats {
-    flex: none;
+    flex: 3;
     align-items: center;
-    gap: 4px;
+    justify-content: space-evenly;
+    gap: 0;
   }
 
   .stat {
+    flex: 1;
     align-items: center;
     text-align: center;
+    justify-content: center;
   }
 
   .controls {
+    flex: 1;
     flex-direction: column;
     justify-content: center;
-    gap: 8px;
-    width: 110px;
+    align-items: center;
+    gap: 16px;
     padding: 0;
-    flex-shrink: 0;
   }
 
   .btn {
-    padding: 16px 8px;
+    padding: 16px 12px;
     font-size: 14px;
+    width: 100%;
   }
 
   .stat-label {
-    font-size: 14px;
+    font-size: 12px;
     margin-top: 2px;
   }
 
@@ -411,6 +412,7 @@ nav a.active {
   }
 
   .ble-status {
-    padding: 4px;
+    padding: 2px;
+    font-size: 10px;
   }
 }
