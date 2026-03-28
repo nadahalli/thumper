@@ -351,8 +351,8 @@ nav a.active {
   padding: 8px 0;
 }
 
-/* Cover display / compact mode (Razr cover display ~360-400px CSS width) */
-@media (max-height: 500px) and (max-width: 420px) {
+/* Cover display / compact mode (Razr cover display: 480x354-410) */
+@media (max-height: 420px) {
   .screen {
     padding: 8px;
   }

@@ -148,14 +148,6 @@ export function createWorkoutScreen(
   });
   requestAnimationFrame(sizeStats);
 
-  // DEBUG: remove after cover display testing
-  const dbg = document.createElement('div');
-  dbg.style.cssText = 'position:fixed;bottom:40px;left:4px;font-size:10px;color:#666;z-index:999';
-  dbg.textContent = `${window.innerWidth}x${window.innerHeight}`;
-  document.body.appendChild(dbg);
-  window.addEventListener('resize', () => {
-    dbg.textContent = `${window.innerWidth}x${window.innerHeight}`;
-  });
 
   state.subscribe(render);
   render();
