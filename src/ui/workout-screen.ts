@@ -124,13 +124,11 @@ export function createWorkoutScreen(
     controls.querySelector('#btn-stop')?.addEventListener('click', () => state.stop());
   }
 
-  const statsContainer = container.querySelector<HTMLElement>('.workout-stats')!;
   const statValues = container.querySelectorAll<HTMLElement>('.stat-value');
 
   function sizeStats(): void {
-    const available = statsContainer.clientHeight;
-    // Each stat gets 1/3 of the container via flex:1.
-    // Within each third, the label is ~24px. The rest is for the number.
+    // Use window height directly, not container height (avoids feedback loop)
+    const available = window.innerHeight - 120; // nav + toolbar + controls + padding
     const perStat = Math.floor(available / 3);
     const fontSize = Math.max(32, Math.min(perStat - 30, 160));
     for (const el of statValues) {
@@ -138,8 +136,26 @@ export function createWorkoutScreen(
     }
   }
 
-  window.addEventListener('resize', sizeStats);
+  // Only resize on actual dimension changes, not scroll-triggered resize events
+  let lastWidth = window.innerWidth;
+  let lastHeight = window.innerHeight;
+  window.addEventListener('resize', () => {
+    if (window.innerWidth !== lastWidth || window.innerHeight !== lastHeight) {
+      lastWidth = window.innerWidth;
+      lastHeight = window.innerHeight;
+      sizeStats();
+    }
+  });
   requestAnimationFrame(sizeStats);
+
+  // DEBUG: remove after cover display testing
+  const dbg = document.createElement('div');
+  dbg.style.cssText = 'position:fixed;bottom:40px;left:4px;font-size:10px;color:#666;z-index:999';
+  dbg.textContent = `${window.innerWidth}x${window.innerHeight}`;
+  document.body.appendChild(dbg);
+  window.addEventListener('resize', () => {
+    dbg.textContent = `${window.innerWidth}x${window.innerHeight}`;
+  });
 
   state.subscribe(render);
   render();
