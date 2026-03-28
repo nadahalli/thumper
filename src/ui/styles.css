@@ -67,6 +67,12 @@ nav a.active {
 }
 
 /* Workout screen */
+.workout-layout {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
 .workout-stats {
   flex: 1;
   display: flex;
@@ -343,4 +349,58 @@ nav a.active {
   justify-content: flex-end;
   gap: 8px;
   padding: 8px 0;
+}
+
+/* Cover display / compact mode */
+@media (max-width: 340px) {
+  .screen {
+    padding: 8px;
+  }
+
+  .toolbar {
+    padding: 4px 0;
+  }
+
+  .btn-icon {
+    font-size: 11px;
+    padding: 6px 8px;
+  }
+
+  .workout-layout {
+    display: flex;
+    flex-direction: row;
+    flex: 1;
+    gap: 8px;
+  }
+
+  .workout-stats {
+    flex: 1;
+    align-items: flex-start;
+  }
+
+  .stat {
+    align-items: flex-start;
+    text-align: left;
+  }
+
+  .controls {
+    flex-direction: column;
+    justify-content: center;
+    width: 100px;
+    padding: 0;
+  }
+
+  .btn {
+    padding: 14px 8px;
+    font-size: 14px;
+  }
+
+  .stat-label {
+    font-size: 14px;
+  }
+
+  nav a {
+    padding: 8px;
+    font-size: 12px;
+  }
 }
