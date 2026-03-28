@@ -410,8 +410,7 @@ nav a.active {
   }
 
   .stat-label {
-    font-size: 11px;
-    margin-top: 0;
+    display: none;
   }
 
   .stat-value {
