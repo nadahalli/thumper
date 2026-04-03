@@ -1,14 +1,17 @@
 import { JumpAnalyzer } from '../core/jump-analyzer';
+import { JumpAnalyzerV2 } from '../core/jump-analyzer-v2';
+
+type Analyzer = JumpAnalyzer | JumpAnalyzerV2;
 
 export class AudioCapture {
   private context: AudioContext | null = null;
   private stream: MediaStream | null = null;
   private processor: ScriptProcessorNode | null = null;
   private source: MediaStreamAudioSourceNode | null = null;
-  private analyzer: JumpAnalyzer;
+  private analyzer: Analyzer;
   private onJump: (count: number) => void;
 
-  constructor(analyzer: JumpAnalyzer, onJump: (count: number) => void) {
+  constructor(analyzer: Analyzer, onJump: (count: number) => void) {
     this.analyzer = analyzer;
     this.onJump = onJump;
   }

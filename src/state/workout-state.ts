@@ -1,4 +1,5 @@
 import { JumpAnalyzer } from '../core/jump-analyzer';
+import { JumpAnalyzerV2 } from '../core/jump-analyzer-v2';
 import { computeSummary, groupSets, type WorkoutSummary } from '../core/summary';
 import { AudioCapture } from '../api/audio';
 import { BluetoothHR } from '../api/bluetooth';
@@ -57,8 +58,12 @@ export interface WorkoutDeps {
   storage: StorageAdapter;
 }
 
+function useV2(): boolean {
+  return new URLSearchParams(window.location.search).get('v') === '2';
+}
+
 function defaultDeps(): WorkoutDeps {
-  const analyzer = new JumpAnalyzer();
+  const analyzer = useV2() ? new JumpAnalyzerV2() : new JumpAnalyzer();
   let jumpCallback: ((count: number) => void) | null = null;
   const audio = new AudioCapture(analyzer, (count) => jumpCallback?.(count));
   const bluetooth = new BluetoothHR();
@@ -71,7 +76,7 @@ function defaultDeps(): WorkoutDeps {
       // Expose internals for the default case
       get _analyzer() { return analyzer; },
       set _jumpCallback(cb: (() => void) | null) { jumpCallback = cb; },
-    } as AudioAdapter & { _analyzer: JumpAnalyzer; _jumpCallback: ((count: number) => void) | null },
+    } as AudioAdapter & { _analyzer: JumpAnalyzer | JumpAnalyzerV2; _jumpCallback: ((count: number) => void) | null },
     bluetooth,
     wakeLock,
     db: {
@@ -94,7 +99,7 @@ export class WorkoutState {
 
   // Internal
   private listeners = new Set<Listener>();
-  private analyzer: JumpAnalyzer;
+  private analyzer: JumpAnalyzer | JumpAnalyzerV2;
   private deps: WorkoutDeps;
   private timerInterval: ReturnType<typeof setInterval> | null = null;
   private sampleInterval: ReturnType<typeof setInterval> | null = null;
@@ -114,7 +119,7 @@ export class WorkoutState {
     // For default deps, the analyzer lives inside the AudioCapture.
     // For injected deps, we create a standalone one (tests don't need audio).
     if (!deps) {
-      const defaultAudio = this.deps.audio as AudioAdapter & { _analyzer: JumpAnalyzer; _jumpCallback: ((count: number) => void) | null };
+      const defaultAudio = this.deps.audio as AudioAdapter & { _analyzer: JumpAnalyzer | JumpAnalyzerV2; _jumpCallback: ((count: number) => void) | null };
       this.analyzer = defaultAudio._analyzer;
       this.analyzer.threshold = threshold;
       defaultAudio._jumpCallback = (count: number) => {
@@ -124,7 +129,7 @@ export class WorkoutState {
         }
       };
     } else {
-      this.analyzer = new JumpAnalyzer(threshold);
+      this.analyzer = useV2() ? new JumpAnalyzerV2(threshold) : new JumpAnalyzer(threshold);
     }
 
     this.deps.bluetooth.onHeartRate = (bpm) => {
