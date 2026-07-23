@@ -17,8 +17,20 @@ export class AudioCapture {
   }
 
   async start(): Promise<void> {
-    this.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    // Disable voice-call processing: noise suppression and AGC on phones
+    // (Oppo/ColorOS especially) strip the impulsive rope-hit transient that
+    // jump detection relies on.
+    this.stream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        echoCancellation: false,
+        noiseSuppression: false,
+        autoGainControl: false,
+      },
+    });
     this.context = new AudioContext();
+    // Chrome on Android can create the context suspended; without resume()
+    // onaudioprocess never fires.
+    await this.context.resume();
     this.source = this.context.createMediaStreamSource(this.stream);
 
     // ScriptProcessorNode: deprecated but widely supported and simple.
