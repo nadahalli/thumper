@@ -136,27 +136,39 @@ export function createWorkoutScreen(
   const statValues = container.querySelectorAll<HTMLElement>('.stat-value');
 
   function sizeStats(): void {
-    // Use window height directly, not container height (avoids feedback loop)
     const isCompact = window.innerHeight <= 420;
-    const overhead = isCompact ? 40 : 120; // compact: just toolbar; normal: nav + toolbar + controls + padding
-    const available = window.innerHeight - overhead;
-    const perStat = Math.floor(available / 3);
     const maxSize = isCompact ? 240 : 160;
-    const fontSize = Math.max(32, Math.min(perStat - 10, maxSize));
-    for (const el of statValues) {
-      el.style.fontSize = `${fontSize}px`;
-      // Height-based sizing can overflow the width on tall narrow screens.
-      // .stat centers its children, so the value box shrinks to its content
-      // and scrollWidth never reports overflow; measure the rendered width
-      // against the parent column instead and shrink until it fits.
-      let size = fontSize;
-      for (let i = 0; i < 3; i++) {
-        const limit = (el.parentElement?.clientWidth ?? window.innerWidth) - 8;
+
+    // One uniform size for all visible stats: the largest that fits every
+    // stat's third of the column in height AND its rendered text in width.
+    // Working from the containers (equal flex thirds in a fixed-height app)
+    // instead of window arithmetic keeps this correct under any OS font
+    // scaling, since inflated labels/buttons shrink the measured thirds.
+    const visible = [...statValues].filter((el) => el.parentElement?.offsetParent != null);
+    if (visible.length === 0) return;
+
+    let size = maxSize;
+    for (const el of visible) {
+      const stat = el.parentElement!;
+      const label = stat.querySelector<HTMLElement>('.stat-label');
+      const availH = stat.clientHeight - (label?.offsetHeight ?? 0) - 12;
+      if (availH > 0) size = Math.min(size, availH);
+    }
+    size = Math.max(24, size);
+
+    // Fit widths: measure rendered text against the column, shrink uniformly.
+    for (let pass = 0; pass < 3; pass++) {
+      for (const el of visible) el.style.fontSize = `${size}px`;
+      let next = size;
+      for (const el of visible) {
+        const limit = el.parentElement!.clientWidth - 8;
         const rendered = el.getBoundingClientRect().width;
-        if (limit <= 0 || rendered <= limit) break;
-        size = Math.max(24, Math.floor((size * limit) / rendered) - 1);
-        el.style.fontSize = `${size}px`;
+        if (limit > 0 && rendered > limit) {
+          next = Math.min(next, Math.max(24, Math.floor((size * limit) / rendered) - 1));
+        }
       }
+      if (next >= size) break;
+      size = next;
     }
   }
 
