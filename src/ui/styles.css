@@ -9,6 +9,13 @@
   --green: #66bb6a;
 }
 
+html {
+  /* Opt out of Android Chrome's text inflation from the OS font-size
+     setting; the stat values are sized to the layout, not to prose. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -92,7 +99,9 @@ nav a.active {
 }
 
 .stat-value {
-  font-size: 96px;
+  /* Cap to viewport width so a zoomed or narrow viewport never clips the
+     digits; 22vw keeps 5 tabular digits inside the screen padding. */
+  font-size: min(96px, 22vw);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   line-height: 1;
