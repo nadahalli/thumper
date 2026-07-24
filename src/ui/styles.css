@@ -35,7 +35,10 @@ body {
 #app {
   display: flex;
   flex-direction: column;
-  min-height: 100dvh;
+  /* Fixed viewport column: the workout screen must never scroll, so the
+     controls cannot be pushed off-screen by oversized content. */
+  height: 100dvh;
+  overflow: hidden;
   /* Android 15+ renders standalone PWAs edge-to-edge; keep content out of
      the status bar and gesture nav areas. */
   padding-top: env(safe-area-inset-top);
@@ -71,6 +74,11 @@ nav a.active {
   flex: 1;
   flex-direction: column;
   padding: 16px;
+  min-height: 0;
+}
+
+#screen-history {
+  overflow-y: auto;
 }
 
 .screen.visible {
@@ -82,6 +90,7 @@ nav a.active {
   display: flex;
   flex-direction: column;
   flex: 1;
+  min-height: 0;
 }
 
 .workout-stats {
@@ -90,10 +99,14 @@ nav a.active {
   flex-direction: column;
   align-items: center;
   gap: 0;
+  min-height: 0;
 }
 
 .stat {
-  flex: 1;
+  /* flex-basis 0 gives every stat an equal third of the column no matter
+     how large its content renders; min-height 0 lets it shrink. */
+  flex: 1 1 0;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -367,7 +380,7 @@ nav a.active {
    the gesture nav area; keep a fixed clearance under the buttons. */
 @media (display-mode: standalone), (display-mode: fullscreen) {
   .controls {
-    padding-bottom: calc(16px + max(env(safe-area-inset-bottom, 0px), 28px));
+    padding-bottom: calc(16px + max(env(safe-area-inset-bottom, 0px), 40px));
   }
 }
 
