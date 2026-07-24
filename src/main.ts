@@ -48,3 +48,29 @@ function navigate(): void {
 
 window.addEventListener('hashchange', navigate);
 navigate();
+
+// The injected registerSW.js only checks for a new service worker at page
+// load, and an installed PWA is rarely relaunched, so deploys take forever
+// to land. Poll for updates, and when a new worker takes control reload the
+// page, but never in the middle of a workout.
+if ('serviceWorker' in navigator) {
+  const checkForUpdate = () => {
+    void navigator.serviceWorker.getRegistration().then((r) => r?.update());
+  };
+  setInterval(checkForUpdate, 60_000);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') checkForUpdate();
+  });
+
+  let hadController = navigator.serviceWorker.controller != null;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    // First controller on a fresh install is not an update
+    if (!hadController) {
+      hadController = true;
+      return;
+    }
+    if (state.phase === 'idle' || state.phase === 'stopped') {
+      location.reload();
+    }
+  });
+}
