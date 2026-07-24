@@ -145,6 +145,14 @@ export function createWorkoutScreen(
     const fontSize = Math.max(32, Math.min(perStat - 10, maxSize));
     for (const el of statValues) {
       el.style.fontSize = `${fontSize}px`;
+      // Height-based sizing can overflow the width on tall narrow screens,
+      // and Android browsers may inflate the rendered text beyond the set
+      // size. Measure what was actually rendered and shrink until it fits.
+      let size = fontSize;
+      for (let i = 0; i < 3 && el.clientWidth > 0 && el.scrollWidth > el.clientWidth; i++) {
+        size = Math.max(24, Math.floor((size * el.clientWidth) / el.scrollWidth) - 2);
+        el.style.fontSize = `${size}px`;
+      }
     }
   }
 

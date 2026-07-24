@@ -363,6 +363,14 @@ nav a.active {
   margin-top: 12px;
 }
 
+/* Installed PWA on Android 15+ is edge-to-edge and env() can report 0 for
+   the gesture nav area; keep a fixed clearance under the buttons. */
+@media (display-mode: standalone), (display-mode: fullscreen) {
+  .controls {
+    padding-bottom: calc(16px + max(env(safe-area-inset-bottom, 0px), 28px));
+  }
+}
+
 /* Toolbar */
 .toolbar {
   display: flex;
