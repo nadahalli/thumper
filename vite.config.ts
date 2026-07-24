@@ -3,6 +3,9 @@ import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
   base: '/thumper/',
+  define: {
+    __BUILD__: JSON.stringify(new Date().toISOString().slice(0, 16).replace('T', ' ') + ' UTC'),
+  },
   plugins: [
     VitePWA({
       registerType: 'autoUpdate',

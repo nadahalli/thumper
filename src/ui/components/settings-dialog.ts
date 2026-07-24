@@ -13,6 +13,7 @@ export function createSettingsDialog(state: WorkoutState): HTMLElement {
         <div class="setting-value" id="sensitivity-value"></div>
       </div>
       <button class="btn btn-secondary btn-centered" id="btn-close-settings">Close</button>
+      <div class="build-stamp">Build ${__BUILD__}</div>
     </div>
   `;
 
