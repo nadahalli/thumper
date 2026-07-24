@@ -36,6 +36,10 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 100dvh;
+  /* Android 15+ renders standalone PWAs edge-to-edge; keep content out of
+     the status bar and gesture nav areas. */
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 /* Nav */
@@ -350,6 +354,13 @@ nav a.active {
   font-size: 18px;
   font-weight: 600;
   margin-top: 4px;
+}
+
+.build-stamp {
+  text-align: center;
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-top: 12px;
 }
 
 /* Toolbar */
