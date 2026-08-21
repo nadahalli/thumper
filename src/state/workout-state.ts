@@ -58,7 +58,9 @@ export interface WorkoutDeps {
   storage: StorageAdapter;
 }
 
+// Opt in with ?v=2. Off outside the browser, where there is no query string.
 function useV2(): boolean {
+  if (typeof window === 'undefined') return false;
   return new URLSearchParams(window.location.search).get('v') === '2';
 }
 
