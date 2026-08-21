@@ -108,7 +108,7 @@
         <div class="setting-value" id="sensitivity-value"></div>
       </div>
       <button class="btn btn-secondary btn-centered" id="btn-close-settings">Close</button>
-      <div class="build-stamp">Build 2026-07-24 06:50 UTC</div>
+      <div class="build-stamp">Build 2026-08-21 08:18 UTC</div>
     </div>
   `;const M=b.querySelector("#sensitivity-slider"),w=b.querySelector("#sensitivity-value"),T=b.querySelector("#btn-close-settings");return M.value=String(k.sensitivity),w.textContent=String(k.sensitivity),M.addEventListener("input",()=>{const S=Number(M.value);k.setSensitivity(S),w.textContent=String(S)}),T.addEventListener("click",()=>{b.classList.remove("open")}),b}function Gi(){document.getElementById("settings-dialog")?.classList.add("open")}const St=new Di,xt=document.getElementById("app");xt.innerHTML=`
   <nav>
