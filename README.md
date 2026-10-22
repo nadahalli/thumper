@@ -13,7 +13,7 @@ A minimal jump rope workout app with BLE heart rate monitoring and mic-based jum
 - **Heart rate monitoring** via any Bluetooth Low Energy HR strap
 - **Jump counting** using the phone's microphone to detect rope impacts
 - **Workout timer** with 5-second countdown, pause/resume
-- **Works offline** I jump in my basement garage, and have no internet there
+- **Works offline** because I jump in my basement garage, and have no internet there
 - **Workout summary** dialog after stopping (duration, avg HR, jumps, jumps per minute)
 - **Workout history** stored locally with IndexedDB
 - **TCX export** of individual or all workouts (compatible with Garmin, Strava, etc.)
