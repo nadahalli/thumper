@@ -13,7 +13,7 @@ function formatTime(seconds: number): string {
   return `${m}:${String(s).padStart(2, '0')}`;
 }
 
-function downloadFile(filename: string, content: string, mime: string): void {
+function downloadFile(filename: string, content: BlobPart, mime: string): void {
   const blob = new Blob([content], { type: mime });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -23,13 +23,24 @@ function downloadFile(filename: string, content: string, mime: string): void {
   URL.revokeObjectURL(url);
 }
 
+function workoutBasename(workout: Workout): string {
+  const d = new Date(workout.startTimeMillis);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `workout-${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}`;
+}
+
 async function exportWorkout(workout: Workout): Promise<void> {
   const samples = await db.workout_samples.where('workoutId').equals(workout.id!).toArray();
   const tcx = buildTcx([workout], new Map([[workout.id!, samples]]));
-  const d = new Date(workout.startTimeMillis);
-  const pad = (n: number) => String(n).padStart(2, '0');
-  const filename = `workout-${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}.tcx`;
-  downloadFile(filename, tcx, 'application/vnd.garmin.tcx+xml');
+  downloadFile(`${workoutBasename(workout)}.tcx`, tcx, 'application/vnd.garmin.tcx+xml');
+}
+
+async function exportWorkoutFit(workout: Workout): Promise<void> {
+  const samples = await db.workout_samples.where('workoutId').equals(workout.id!).toArray();
+  // Lazy-loaded: the FIT SDK profile is ~400 kB and only needed on export.
+  const { buildFit } = await import('../core/fit-builder');
+  const fit = buildFit(workout, samples);
+  downloadFile(`${workoutBasename(workout)}.fit`, fit as Uint8Array<ArrayBuffer>, 'application/vnd.ant.fit');
 }
 
 async function exportAll(): Promise<void> {
@@ -61,6 +72,7 @@ function renderItem(workout: Workout): string {
       </div>
       <div class="history-actions">
         <button class="btn-export" data-id="${workout.id}">Export TCX</button>
+        <button class="btn-export btn-export-fit" data-id="${workout.id}">Export FIT</button>
         <button class="btn-icon btn-delete" data-id="${workout.id}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M5 6v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg></button>
       </div>
     </div>
@@ -91,7 +103,9 @@ export function createHistoryScreen(container: HTMLElement): void {
       btn.addEventListener('click', async () => {
         const id = Number(btn.dataset.id);
         const w = workouts.find((w) => w.id === id);
-        if (w) await exportWorkout(w);
+        if (!w) return;
+        if (btn.classList.contains('btn-export-fit')) await exportWorkoutFit(w);
+        else await exportWorkout(w);
       });
     }
 

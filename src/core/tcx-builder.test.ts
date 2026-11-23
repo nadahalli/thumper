@@ -120,10 +120,13 @@ describe('buildTcx (multi-lap with sets)', () => {
     sample({ timestampMillis: BASE_TS + 280_000, heartRate: 170 }),
   ];
 
-  it('produces one Lap per set', () => {
+  it('produces one Lap per set plus a Resting lap for the gap', () => {
     const tcx = buildTcx([setsWorkout], new Map([[1, samples]]));
-    const laps = tcx.match(/<Lap /g);
-    expect(laps).toHaveLength(2);
+    expect(tcx.match(/<Lap /g)).toHaveLength(3);
+    expect(tcx.match(/<Intensity>Active<\/Intensity>/g)).toHaveLength(2);
+    expect(tcx.match(/<Intensity>Resting<\/Intensity>/g)).toHaveLength(1);
+    expect(tcx).toContain(`<Lap StartTime="${new Date(set1End).toISOString()}">`);
+    expect(tcx).toContain('<TotalTimeSeconds>60</TotalTimeSeconds>'); // rest: 120s..180s
   });
 
   it('each Lap has correct start time', () => {
@@ -144,16 +147,35 @@ describe('buildTcx (multi-lap with sets)', () => {
     expect(tcx).toContain('<Notes>80 jumps</Notes>');
   });
 
-  it('HR samples are filtered to their respective Laps', () => {
+  it('HR samples between sets go into the Resting lap', () => {
     const tcx = buildTcx([setsWorkout], new Map([[1, samples]]));
-    // Rest sample (ts=BASE+150s, HR=110) should not appear in any lap trackpoints
-    // Set1 has HR 120, 140, 150; Set2 has HR 155, 170
-    expect(tcx).toContain('<Value>120</Value>');
-    expect(tcx).toContain('<Value>155</Value>');
-    // The rest HR should still not be in any Lap since it's between sets
-    // Count occurrences of 110 in HeartRateBpm context
-    const hrMatches = tcx.match(/<Value>110<\/Value>/g);
-    expect(hrMatches).toBeNull();
+    const laps = tcx.split('<Lap ').slice(1);
+    expect(laps[0]).toContain('<Value>120</Value>');
+    expect(laps[1]).toContain('<Intensity>Resting</Intensity>');
+    expect(laps[1]).toContain('<Value>110</Value>');
+    expect(laps[1]).not.toContain('<Notes>');
+    expect(laps[2]).toContain('<Value>155</Value>');
+  });
+
+  it('no Resting lap when there are no samples in the gap', () => {
+    const noRest = samples.filter((s) => s.timestampMillis !== BASE_TS + 150_000);
+    const tcx = buildTcx([setsWorkout], new Map([[1, noRest]]));
+    expect(tcx.match(/<Lap /g)).toHaveLength(2);
+    expect(tcx).not.toContain('Resting');
+  });
+
+  it('Trackpoints carry jump rate as Cadence', () => {
+    const pts = [
+      sample({ timestampMillis: BASE_TS + 10_000, jumpCount: 0, heartRate: 120 }),
+      sample({ timestampMillis: BASE_TS + 15_000, jumpCount: 12, heartRate: 121 }),
+    ];
+    const w = workout({ sets: [{ startMs: BASE_TS, endMs: BASE_TS + 20_000, jumps: 12 }] });
+    const tcx = buildTcx([w], new Map([[1, pts]]));
+    // 12 jumps in 5 s = 144/min; first point has no window yet
+    expect(tcx.match(/<Cadence>/g)).toHaveLength(1);
+    expect(tcx).toContain('<Cadence>144</Cadence>');
+    // Schema order: HeartRateBpm before Cadence
+    expect(tcx.indexOf('<Value>121</Value>')).toBeLessThan(tcx.indexOf('<Cadence>144</Cadence>'));
   });
 
   it('Laps include AverageHeartRateBpm and MaximumHeartRateBpm', () => {

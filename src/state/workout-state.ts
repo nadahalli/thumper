@@ -12,7 +12,7 @@ export type WorkoutPhase = 'idle' | 'countdown' | 'active' | 'paused' | 'stopped
 type Listener = () => void;
 
 const COUNTDOWN_SECONDS = 5;
-const SAMPLE_INTERVAL_MS = 5000;
+const SAMPLE_INTERVAL_MS = 1000;
 const SENSITIVITY_KEY = 'thumper_sensitivity';
 
 export interface AudioAdapter {
@@ -21,7 +21,7 @@ export interface AudioAdapter {
 }
 
 export interface BluetoothAdapter {
-  onHeartRate: ((bpm: number) => void) | null;
+  onHeartRate: ((bpm: number, rrIntervalsMs?: number[]) => void) | null;
   onStateChange: ((state: ConnectionState) => void) | null;
   scan(): Promise<ScannedDevice>;
   connect(device: ScannedDevice): Promise<void>;
@@ -110,6 +110,7 @@ export class WorkoutState {
   private pausedElapsed = 0;
   private hrReadings: number[] = [];
   private samples: WorkoutSample[] = [];
+  private pendingRr: number[] = [];
   private workoutId: number | undefined = undefined;
 
   constructor(deps?: WorkoutDeps) {
@@ -134,10 +135,11 @@ export class WorkoutState {
       this.analyzer = useV2() ? new JumpAnalyzerV2(threshold) : new JumpAnalyzer(threshold);
     }
 
-    this.deps.bluetooth.onHeartRate = (bpm) => {
+    this.deps.bluetooth.onHeartRate = (bpm, rrIntervalsMs) => {
       this.heartRate = bpm;
       if (this.phase === 'active') {
         this.hrReadings.push(bpm);
+        if (rrIntervalsMs) this.pendingRr.push(...rrIntervalsMs);
       }
       this.notify();
     };
@@ -185,6 +187,7 @@ export class WorkoutState {
     this.elapsedSeconds = 0;
     this.hrReadings = [];
     this.samples = [];
+    this.pendingRr = [];
     this.summary = null;
     this.analyzer.reset();
     this.notify();
@@ -298,12 +301,17 @@ export class WorkoutState {
   }
 
   private collectSample(): void {
-    this.samples.push({
+    const sample: WorkoutSample = {
       workoutId: 0, // filled on save
       timestampMillis: Date.now(),
       heartRate: this.heartRate,
       jumpCount: this.jumpCount,
-    });
+    };
+    if (this.pendingRr.length > 0) {
+      sample.rrIntervalsMs = this.pendingRr;
+      this.pendingRr = [];
+    }
+    this.samples.push(sample);
   }
 
   private clearTimers(): void {

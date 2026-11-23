@@ -16,6 +16,7 @@
     "vitest": "^4.0.18"
   },
   "dependencies": {
+    "@garmin/fitsdk": "21.221.0",
     "dexie": "^4.3.0",
     "vite-plugin-pwa": "^1.2.0"
   }
