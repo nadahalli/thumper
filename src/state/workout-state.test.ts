@@ -283,6 +283,39 @@ describe('WorkoutState lifecycle', () => {
     expect(state.summary!.avgHeartRate).toBeNull();
   });
 
+  it('samples once per second while active', async () => {
+    await state.start();
+    await advancePastCountdown();
+    vi.advanceTimersByTime(10_000);
+    await state.stop();
+    await state.saveWorkout();
+    // 10 interval samples plus the final sample taken on stop
+    expect(deps.savedSamples).toHaveLength(11);
+  });
+
+  it('RR intervals are attached to the next sample and not repeated', async () => {
+    await state.start();
+    await advancePastCountdown();
+    deps.bluetooth.onHeartRate?.(120, [500, 510]);
+    deps.bluetooth.onHeartRate?.(121, [505]);
+    vi.advanceTimersByTime(1000);
+    vi.advanceTimersByTime(1000);
+    await state.stop();
+    await state.saveWorkout();
+    expect(deps.savedSamples[0].rrIntervalsMs).toEqual([500, 510, 505]);
+    expect(deps.savedSamples[1].rrIntervalsMs).toBeUndefined();
+  });
+
+  it('RR intervals outside active phase are dropped', async () => {
+    deps.bluetooth.onHeartRate?.(90, [700]);
+    await state.start();
+    await advancePastCountdown();
+    vi.advanceTimersByTime(1000);
+    await state.stop();
+    await state.saveWorkout();
+    expect(deps.savedSamples.every((s) => s.rrIntervalsMs === undefined)).toBe(true);
+  });
+
   it('bluetooth state changes update connectionState', () => {
     deps.bluetooth.onStateChange?.('scanning');
     expect(state.connectionState).toBe('scanning');

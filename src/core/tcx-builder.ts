@@ -1,4 +1,5 @@
-import type { Workout, WorkoutSample, WorkoutSet } from '../data/types';
+import type { Workout, WorkoutSample } from '../data/types';
+import { buildLaps, lapHeartRate, toTrackPoints, type ExportLap, type TrackPoint } from './workout-laps';
 
 function toIso(ms: number): string {
   return new Date(ms).toISOString();
@@ -8,45 +9,40 @@ function escapeXml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-function buildTrackpoint(s: WorkoutSample): string {
+function buildTrackpoint(p: TrackPoint): string {
   let xml = '          <Trackpoint>\n';
-  xml += `            <Time>${toIso(s.timestampMillis)}</Time>\n`;
-  if (s.heartRate != null) {
+  xml += `            <Time>${toIso(p.timestampMillis)}</Time>\n`;
+  if (p.heartRate != null) {
     xml += '            <HeartRateBpm>\n';
-    xml += `              <Value>${s.heartRate}</Value>\n`;
+    xml += `              <Value>${p.heartRate}</Value>\n`;
     xml += '            </HeartRateBpm>\n';
+  }
+  if (p.cadence != null) {
+    xml += `            <Cadence>${p.cadence}</Cadence>\n`;
   }
   xml += '          </Trackpoint>\n';
   return xml;
 }
 
-function buildSetLap(set: WorkoutSet, allSamples: WorkoutSample[]): string {
-  const lapSamples = allSamples.filter(
-    (s) => s.timestampMillis >= set.startMs && s.timestampMillis <= set.endMs,
-  );
-  const hrValues = lapSamples
-    .map((s) => s.heartRate)
-    .filter((hr): hr is number => hr != null);
-  const avgHr =
-    hrValues.length > 0
-      ? Math.round(hrValues.reduce((a, b) => a + b, 0) / hrValues.length)
-      : null;
-  const maxHr = hrValues.length > 0 ? Math.max(...hrValues) : null;
-  const durationSeconds = Math.round((set.endMs - set.startMs) / 1000);
+function buildLap(lap: ExportLap): string {
+  const { avg, max } = lapHeartRate(lap);
+  const durationSeconds = Math.round((lap.endMs - lap.startMs) / 1000);
 
-  let xml = `      <Lap StartTime="${toIso(set.startMs)}">\n`;
+  let xml = `      <Lap StartTime="${toIso(lap.startMs)}">\n`;
   xml += `        <TotalTimeSeconds>${durationSeconds}</TotalTimeSeconds>\n`;
-  if (avgHr != null) {
-    xml += `        <AverageHeartRateBpm><Value>${avgHr}</Value></AverageHeartRateBpm>\n`;
+  if (avg != null) {
+    xml += `        <AverageHeartRateBpm><Value>${avg}</Value></AverageHeartRateBpm>\n`;
   }
-  if (maxHr != null) {
-    xml += `        <MaximumHeartRateBpm><Value>${maxHr}</Value></MaximumHeartRateBpm>\n`;
+  if (max != null) {
+    xml += `        <MaximumHeartRateBpm><Value>${max}</Value></MaximumHeartRateBpm>\n`;
   }
-  xml += `        <Intensity>Active</Intensity>\n`;
-  xml += `        <Notes>${escapeXml(`${set.jumps} jumps`)}</Notes>\n`;
+  xml += `        <Intensity>${lap.kind === 'active' ? 'Active' : 'Resting'}</Intensity>\n`;
+  if (lap.kind === 'active') {
+    xml += `        <Notes>${escapeXml(`${lap.jumps} jumps`)}</Notes>\n`;
+  }
   xml += '        <Track>\n';
-  for (const s of lapSamples) {
-    xml += buildTrackpoint(s);
+  for (const p of lap.points) {
+    xml += buildTrackpoint(p);
   }
   xml += '        </Track>\n';
   xml += '      </Lap>\n';
@@ -70,8 +66,8 @@ export function buildTcx(
     xml += `      <Id>${startTime}</Id>\n`;
 
     if (w.sets && w.sets.length > 0) {
-      for (const set of w.sets) {
-        xml += buildSetLap(set, samples);
+      for (const lap of buildLaps(w, samples)) {
+        xml += buildLap(lap);
       }
     } else {
       // Legacy single-lap fallback
@@ -81,8 +77,8 @@ export function buildTcx(
         xml += `        <Notes>${escapeXml(`Jump time: ${w.jumpTimeSeconds}s`)}</Notes>\n`;
       }
       xml += '        <Track>\n';
-      for (const s of samples) {
-        xml += buildTrackpoint(s);
+      for (const p of toTrackPoints(samples)) {
+        xml += buildTrackpoint(p);
       }
       xml += '        </Track>\n';
       xml += '      </Lap>\n';

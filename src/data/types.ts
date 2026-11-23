@@ -20,6 +20,8 @@ export interface WorkoutSample {
   timestampMillis: number;
   heartRate: number | null;
   jumpCount: number;
+  /** RR intervals (ms) received since the previous sample. Absent on older workouts. */
+  rrIntervalsMs?: number[];
 }
 
 export type ConnectionState = 'disconnected' | 'scanning' | 'connecting' | 'connected';

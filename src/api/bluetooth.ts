@@ -1,11 +1,11 @@
-import { parseHeartRate, HR_SERVICE_UUID, HR_MEASUREMENT_UUID } from '../core/hr-parser';
+import { parseHeartRateMeasurement, HR_SERVICE_UUID, HR_MEASUREMENT_UUID } from '../core/hr-parser';
 import type { ConnectionState, ScannedDevice } from '../data/types';
 
 export class BluetoothHR {
   private device: BluetoothDevice | null = null;
   private characteristic: BluetoothRemoteGATTCharacteristic | null = null;
 
-  onHeartRate: ((bpm: number) => void) | null = null;
+  onHeartRate: ((bpm: number, rrIntervalsMs?: number[]) => void) | null = null;
   onStateChange: ((state: ConnectionState) => void) | null = null;
 
   async scan(): Promise<ScannedDevice> {
@@ -35,8 +35,8 @@ export class BluetoothHR {
     this.characteristic.addEventListener('characteristicvaluechanged', (event) => {
       const value = (event.target as BluetoothRemoteGATTCharacteristic).value;
       if (value) {
-        const bpm = parseHeartRate(value);
-        this.onHeartRate?.(bpm);
+        const { bpm, rrIntervalsMs } = parseHeartRateMeasurement(value);
+        this.onHeartRate?.(bpm, rrIntervalsMs);
       }
     });
 

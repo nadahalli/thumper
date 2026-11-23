@@ -17,6 +17,7 @@ A minimal jump rope workout app with BLE heart rate monitoring and mic-based jum
 - **Workout summary** dialog after stopping (duration, avg HR, jumps, jumps per minute)
 - **Workout history** stored locally with IndexedDB
 - **TCX export** of individual or all workouts (compatible with Garmin, Strava, etc.)
+- **FIT export** of individual workouts as Jump Rope, with jump counts per lap and RR intervals for HRV
 - **Adjustable sensitivity** for jump detection threshold
 
 ## Requirements
@@ -44,6 +45,8 @@ src/
     jump-analyzer.ts            Amplitude detection (threshold, cooldown, gap tracking)
     hr-parser.ts                BLE HR measurement byte parsing
     tcx-builder.ts              Garmin TCX XML generation
+    fit-builder.ts              Garmin FIT activity generation (jump rope, HRV)
+    workout-laps.ts             Set/rest lap split and jump rate shared by exporters
     summary.ts                  Workout summary computation
   api/                        Web API wrappers (thin adapters)
     audio.ts                    getUserMedia + ScriptProcessorNode
